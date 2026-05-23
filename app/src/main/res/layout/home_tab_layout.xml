@@ -97,6 +97,28 @@
                         android:textColor="#DDDDDD" />
 
                     <TextView
+                        android:id="@+id/lanProxyUsernameText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:paddingTop="4dp"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace"
+                        android:textColor="#DDDDDD"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/lanProxyPasswordText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:paddingTop="2dp"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace"
+                        android:textColor="#DDDDDD"
+                        android:visibility="gone" />
+
+                    <TextView
                         android:id="@+id/lanProxyHint"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

@@ -30,6 +30,7 @@ import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.ViewModelProvider;
@@ -67,6 +68,10 @@ public class MoreOptionsPreferenceActivity extends LocalizedActivities.AppCompat
         ListPreference mLanguageSelector;
         EditTextPreference mCdnFrontingCustomIpList;
         EditTextPreference mCdnFrontingCustomSni;
+        EditTextPreference mShareProxySocksPort;
+        EditTextPreference mShareProxyHttpPort;
+        EditTextPreference mShareProxyUsername;
+        EditTextPreference mShareProxyPassword;
 
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             super.onCreatePreferences(savedInstanceState, rootKey);
@@ -234,6 +239,11 @@ public class MoreOptionsPreferenceActivity extends LocalizedActivities.AppCompat
         @SuppressWarnings("deprecation")
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, final String key) {
+            trimNetworkSharingPort(sharedPreferences, key, getString(R.string.shareProxyOnNetworkSocksPortPreference));
+            trimNetworkSharingPort(sharedPreferences, key, getString(R.string.shareProxyOnNetworkHttpPortPreference));
+            trimNetworkSharingUsername(sharedPreferences, key);
+            updateNetworkSharingPreferences();
+
             // If language preference has changed we need to set new locale based on the current
             // preference value and restart the app.
             if (key.equals(getString(R.string.preferenceLanguageSelection))) {
@@ -546,9 +556,30 @@ public class MoreOptionsPreferenceActivity extends LocalizedActivities.AppCompat
         private void setupNetworkSharing(PreferenceScreen preferences, PreferenceGetter preferenceGetter) {
             SwitchPreference shareProxySwitch =
                     (SwitchPreference) preferences.findPreference(getString(R.string.shareProxyOnNetworkPreference));
+            mShareProxySocksPort = (EditTextPreference) preferences
+                    .findPreference(getString(R.string.shareProxyOnNetworkSocksPortPreference));
+            mShareProxyHttpPort = (EditTextPreference) preferences
+                    .findPreference(getString(R.string.shareProxyOnNetworkHttpPortPreference));
+            mShareProxyUsername = (EditTextPreference) preferences
+                    .findPreference(getString(R.string.shareProxyOnNetworkUsernamePreference));
+            mShareProxyPassword = (EditTextPreference) preferences
+                    .findPreference(getString(R.string.shareProxyOnNetworkPasswordPreference));
+
+            setupNetworkSharingPortPreference(
+                    mShareProxySocksPort,
+                    preferenceGetter.getString(getString(R.string.shareProxyOnNetworkSocksPortPreference), ""));
+            setupNetworkSharingPortPreference(
+                    mShareProxyHttpPort,
+                    preferenceGetter.getString(getString(R.string.shareProxyOnNetworkHttpPortPreference), ""));
+            setupNetworkSharingUsernamePreference(
+                    preferenceGetter.getString(getString(R.string.shareProxyOnNetworkUsernamePreference), ""));
+            setupNetworkSharingPasswordPreference(
+                    preferenceGetter.getString(getString(R.string.shareProxyOnNetworkPasswordPreference), ""));
+
             if (shareProxySwitch != null) {
                 shareProxySwitch.setChecked(
                         preferenceGetter.getBoolean(getString(R.string.shareProxyOnNetworkPreference), false));
+                updateNetworkSharingPreferences();
 
                 shareProxySwitch.setOnPreferenceChangeListener((preference, newValue) -> {
                     boolean enabled = (Boolean) newValue;
@@ -563,6 +594,7 @@ public class MoreOptionsPreferenceActivity extends LocalizedActivities.AppCompat
                                     shareProxySwitch.getSharedPreferences().edit()
                                             .putBoolean(getString(R.string.shareProxyOnNetworkPreference), true)
                                             .apply();
+                                    updateNetworkSharingPreferences();
                                     // Request tunnel restart to apply the new setting
                                     restartTunnelForNetworkSharing();
                                 })
@@ -575,6 +607,167 @@ public class MoreOptionsPreferenceActivity extends LocalizedActivities.AppCompat
                         return true;
                     }
                 });
+            }
+        }
+
+        private void setupNetworkSharingPortPreference(EditTextPreference preference, String value) {
+            if (preference == null) {
+                return;
+            }
+            preference.setText(value == null ? "" : value.trim());
+            preference.setOnBindEditTextListener(editText -> {
+                editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+                editText.setSelection(editText.length());
+            });
+            preference.setOnPreferenceChangeListener((pref, newValue) -> {
+                String port = ((String) newValue).trim();
+                if (isBlankOrValidPort(port)) {
+                    return true;
+                }
+                Toast.makeText(getActivity(), R.string.network_proxy_connect_invalid_values, Toast.LENGTH_SHORT).show();
+                return false;
+            });
+            updateNetworkSharingPortSummary(preference);
+        }
+
+        private void setupNetworkSharingUsernamePreference(String value) {
+            if (mShareProxyUsername == null) {
+                return;
+            }
+            mShareProxyUsername.setText(value == null ? "" : value.trim());
+            mShareProxyUsername.setOnBindEditTextListener(editText -> {
+                editText.setSingleLine(true);
+                editText.setSelection(editText.length());
+            });
+            updateNetworkSharingUsernameSummary();
+        }
+
+        private void setupNetworkSharingPasswordPreference(String value) {
+            if (mShareProxyPassword == null) {
+                return;
+            }
+            mShareProxyPassword.setText(value == null ? "" : value);
+            mShareProxyPassword.setOnBindEditTextListener(editText -> {
+                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                editText.setSingleLine(true);
+                editText.setSelection(editText.length());
+            });
+            updateNetworkSharingPasswordSummary();
+        }
+
+        private boolean isBlankOrValidPort(String port) {
+            if (TextUtils.isEmpty(port)) {
+                return true;
+            }
+            try {
+                return UpstreamProxySettings.isValidProxyPort(Integer.parseInt(port));
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        private void trimNetworkSharingPort(SharedPreferences sharedPreferences, String changedKey, String portKey) {
+            if (!portKey.equals(changedKey)) {
+                return;
+            }
+            String value = sharedPreferences.getString(portKey, "");
+            if (value == null) {
+                value = "";
+            }
+            String trimmed = value.trim();
+            if (!trimmed.equals(value)) {
+                sharedPreferences.edit().putString(portKey, trimmed).apply();
+                EditTextPreference preference = findPreference(portKey);
+                if (preference != null) {
+                    preference.setText(trimmed);
+                }
+            }
+        }
+
+        private void trimNetworkSharingUsername(SharedPreferences sharedPreferences, String changedKey) {
+            String usernameKey = getString(R.string.shareProxyOnNetworkUsernamePreference);
+            if (!usernameKey.equals(changedKey)) {
+                return;
+            }
+            String value = sharedPreferences.getString(usernameKey, "");
+            if (value == null) {
+                value = "";
+            }
+            String trimmed = value.trim();
+            if (!trimmed.equals(value)) {
+                sharedPreferences.edit().putString(usernameKey, trimmed).apply();
+                if (mShareProxyUsername != null) {
+                    mShareProxyUsername.setText(trimmed);
+                }
+            }
+        }
+
+        private void updateNetworkSharingPreferences() {
+            SwitchPreference shareProxySwitch =
+                    findPreference(getString(R.string.shareProxyOnNetworkPreference));
+            boolean sharingEnabled = shareProxySwitch != null && shareProxySwitch.isChecked();
+            updateNetworkSharingPortPreference(mShareProxySocksPort, sharingEnabled);
+            updateNetworkSharingPortPreference(mShareProxyHttpPort, sharingEnabled);
+            updateNetworkSharingTextPreference(mShareProxyUsername, sharingEnabled);
+            updateNetworkSharingTextPreference(mShareProxyPassword, sharingEnabled);
+        }
+
+        private void updateNetworkSharingPortPreference(EditTextPreference preference, boolean sharingEnabled) {
+            if (preference == null) {
+                return;
+            }
+            preference.setVisible(sharingEnabled);
+            preference.setEnabled(sharingEnabled);
+            updateNetworkSharingPortSummary(preference);
+        }
+
+        private void updateNetworkSharingTextPreference(EditTextPreference preference, boolean sharingEnabled) {
+            if (preference == null) {
+                return;
+            }
+            preference.setVisible(sharingEnabled);
+            preference.setEnabled(sharingEnabled);
+            if (preference == mShareProxyPassword) {
+                updateNetworkSharingPasswordSummary();
+            } else {
+                updateNetworkSharingUsernameSummary();
+            }
+        }
+
+        private void updateNetworkSharingPortSummary(EditTextPreference preference) {
+            String value = preference.getText();
+            if (TextUtils.isEmpty(value)) {
+                if (preference.getKey().equals(getString(R.string.shareProxyOnNetworkSocksPortPreference))) {
+                    preference.setSummary(R.string.preference_share_proxy_socks_port_summary);
+                } else {
+                    preference.setSummary(R.string.preference_share_proxy_http_port_summary);
+                }
+            } else {
+                preference.setSummary(value);
+            }
+        }
+
+        private void updateNetworkSharingUsernameSummary() {
+            if (mShareProxyUsername == null) {
+                return;
+            }
+            String value = mShareProxyUsername.getText();
+            if (TextUtils.isEmpty(value)) {
+                mShareProxyUsername.setSummary(R.string.preference_share_proxy_username_summary);
+            } else {
+                mShareProxyUsername.setSummary(value);
+            }
+        }
+
+        private void updateNetworkSharingPasswordSummary() {
+            if (mShareProxyPassword == null) {
+                return;
+            }
+            String value = mShareProxyPassword.getText();
+            if (TextUtils.isEmpty(value)) {
+                mShareProxyPassword.setSummary(R.string.preference_share_proxy_password_summary);
+            } else {
+                mShareProxyPassword.setSummary(value);
             }
         }
 

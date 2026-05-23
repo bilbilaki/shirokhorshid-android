@@ -132,11 +132,31 @@
             android:summary="@string/preference_share_proxy_description"
             android:selectable="false" />
         <SwitchPreference
-            android:icon="@drawable/baseline_device_hub_white_24"
+            android:icon="@drawable/ic_network_share"
             android:key="@string/shareProxyOnNetworkPreference"
             android:title="@string/preference_share_proxy_title"
             android:summary="@string/preference_share_proxy_summary"
             android:defaultValue="false" />
+        <EditTextPreference
+            android:icon="@drawable/ic_proxy_port"
+            android:key="@string/shareProxyOnNetworkSocksPortPreference"
+            android:title="@string/preference_share_proxy_socks_port_title"
+            android:summary="@string/preference_share_proxy_socks_port_summary" />
+        <EditTextPreference
+            android:icon="@drawable/ic_proxy_port"
+            android:key="@string/shareProxyOnNetworkHttpPortPreference"
+            android:title="@string/preference_share_proxy_http_port_title"
+            android:summary="@string/preference_share_proxy_http_port_summary" />
+        <EditTextPreference
+            android:icon="@drawable/ic_proxy_user"
+            android:key="@string/shareProxyOnNetworkUsernamePreference"
+            android:title="@string/preference_share_proxy_username_title"
+            android:summary="@string/preference_share_proxy_username_summary" />
+        <EditTextPreference
+            android:icon="@drawable/ic_proxy_password"
+            android:key="@string/shareProxyOnNetworkPasswordPreference"
+            android:title="@string/preference_share_proxy_password_title"
+            android:summary="@string/preference_share_proxy_password_summary" />
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/preference_category_stealth_title">

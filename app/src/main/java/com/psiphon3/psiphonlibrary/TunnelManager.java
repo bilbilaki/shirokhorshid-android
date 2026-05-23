@@ -164,6 +164,10 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
         String sponsorId = EmbeddedValues.SPONSOR_ID;
         String deviceLocation = "";
         boolean shareProxyOnNetwork = false;
+        int shareProxyOnNetworkSocksPort = 0;
+        int shareProxyOnNetworkHttpPort = 0;
+        String shareProxyOnNetworkUsername = "";
+        String shareProxyOnNetworkPassword = "";
     }
 
     private Config m_tunnelConfig;
@@ -597,6 +601,22 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
             tunnelConfig.shareProxyOnNetwork = multiProcessPreferences
                     .getBoolean(getContext().getString(R.string.shareProxyOnNetworkPreference),
                             false);
+            tunnelConfig.shareProxyOnNetworkSocksPort = parseOptionalProxyPort(
+                    multiProcessPreferences.getString(
+                            getContext().getString(R.string.shareProxyOnNetworkSocksPortPreference),
+                            ""));
+            tunnelConfig.shareProxyOnNetworkHttpPort = parseOptionalProxyPort(
+                    multiProcessPreferences.getString(
+                            getContext().getString(R.string.shareProxyOnNetworkHttpPortPreference),
+                            ""));
+            tunnelConfig.shareProxyOnNetworkUsername = normalizeProxyUsername(
+                    multiProcessPreferences.getString(
+                            getContext().getString(R.string.shareProxyOnNetworkUsernamePreference),
+                            ""));
+            tunnelConfig.shareProxyOnNetworkPassword = normalizeProxyPassword(
+                    multiProcessPreferences.getString(
+                            getContext().getString(R.string.shareProxyOnNetworkPasswordPreference),
+                            ""));
             return tunnelConfig;
         });
 
@@ -1920,12 +1940,43 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
             // When LAN sharing is enabled, bind proxy listeners to all interfaces
             if (tunnelConfig.shareProxyOnNetwork) {
                 json.put("ListenInterface", "any");
+                if (tunnelConfig.shareProxyOnNetworkSocksPort > 0) {
+                    json.put("LocalSocksProxyPort", tunnelConfig.shareProxyOnNetworkSocksPort);
+                }
+                if (tunnelConfig.shareProxyOnNetworkHttpPort > 0) {
+                    json.put("LocalHttpProxyPort", tunnelConfig.shareProxyOnNetworkHttpPort);
+                }
+                if (!TextUtils.isEmpty(tunnelConfig.shareProxyOnNetworkUsername) &&
+                        !TextUtils.isEmpty(tunnelConfig.shareProxyOnNetworkPassword)) {
+                    json.put("LocalProxyUsername", tunnelConfig.shareProxyOnNetworkUsername);
+                    json.put("LocalProxyPassword", tunnelConfig.shareProxyOnNetworkPassword);
+                }
             }
 
             return json.toString();
         } catch (JSONException e) {
             return null;
         }
+    }
+
+    private static int parseOptionalProxyPort(String value) {
+        if (TextUtils.isEmpty(value)) {
+            return 0;
+        }
+        try {
+            int port = Integer.parseInt(value.trim());
+            return UpstreamProxySettings.isValidProxyPort(port) ? port : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static String normalizeProxyUsername(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static String normalizeProxyPassword(String value) {
+        return value == null ? "" : value;
     }
 
     // This observable emits a pair consisting of the latest NetworkConnectionState state and a

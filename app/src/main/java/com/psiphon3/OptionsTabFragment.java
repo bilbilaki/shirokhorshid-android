@@ -477,7 +477,39 @@ public class OptionsTabFragment extends PsiphonPreferenceFragmentCompat {
                 prefs.getBoolean(getString(R.string.shareProxyOnNetworkPreference), false);
         boolean shareProxyCurrent =
                 multiProcessPreferences.getBoolean(getString(R.string.shareProxyOnNetworkPreference), false);
-        return shareProxyCurrent != shareProxyNew;
+        if (shareProxyCurrent != shareProxyNew) {
+            return true;
+        }
+
+        String shareProxySocksPortNew =
+                prefs.getString(getString(R.string.shareProxyOnNetworkSocksPortPreference), "");
+        String shareProxySocksPortCurrent =
+                multiProcessPreferences.getString(getString(R.string.shareProxyOnNetworkSocksPortPreference), "");
+        if (!shareProxySocksPortCurrent.equals(shareProxySocksPortNew)) {
+            return true;
+        }
+
+        String shareProxyHttpPortNew =
+                prefs.getString(getString(R.string.shareProxyOnNetworkHttpPortPreference), "");
+        String shareProxyHttpPortCurrent =
+                multiProcessPreferences.getString(getString(R.string.shareProxyOnNetworkHttpPortPreference), "");
+        if (!shareProxyHttpPortCurrent.equals(shareProxyHttpPortNew)) {
+            return true;
+        }
+
+        String shareProxyUsernameNew =
+                prefs.getString(getString(R.string.shareProxyOnNetworkUsernamePreference), "");
+        String shareProxyUsernameCurrent =
+                multiProcessPreferences.getString(getString(R.string.shareProxyOnNetworkUsernamePreference), "");
+        if (!shareProxyUsernameCurrent.equals(shareProxyUsernameNew)) {
+            return true;
+        }
+
+        String shareProxyPasswordNew =
+                prefs.getString(getString(R.string.shareProxyOnNetworkPasswordPreference), "");
+        String shareProxyPasswordCurrent =
+                multiProcessPreferences.getString(getString(R.string.shareProxyOnNetworkPasswordPreference), "");
+        return !shareProxyPasswordCurrent.equals(shareProxyPasswordNew);
     }
 
     private void updateVpnSettingsFromPreferences() {
@@ -527,6 +559,10 @@ public class OptionsTabFragment extends PsiphonPreferenceFragmentCompat {
                 new SharedPreferencesImport(requireContext(), prefName, getString(R.string.conduitTimeoutPreference), getString(R.string.conduitTimeoutPreference)),
                 new SharedPreferencesImport(requireContext(), prefName, getString(R.string.rejectCensoredCountryProxiesPreference), getString(R.string.rejectCensoredCountryProxiesPreference)),
                 new SharedPreferencesImport(requireContext(), prefName, getString(R.string.shareProxyOnNetworkPreference), getString(R.string.shareProxyOnNetworkPreference)),
+                new SharedPreferencesImport(requireContext(), prefName, getString(R.string.shareProxyOnNetworkSocksPortPreference), getString(R.string.shareProxyOnNetworkSocksPortPreference)),
+                new SharedPreferencesImport(requireContext(), prefName, getString(R.string.shareProxyOnNetworkHttpPortPreference), getString(R.string.shareProxyOnNetworkHttpPortPreference)),
+                new SharedPreferencesImport(requireContext(), prefName, getString(R.string.shareProxyOnNetworkUsernamePreference), getString(R.string.shareProxyOnNetworkUsernamePreference)),
+                new SharedPreferencesImport(requireContext(), prefName, getString(R.string.shareProxyOnNetworkPasswordPreference), getString(R.string.shareProxyOnNetworkPasswordPreference)),
                 new SharedPreferencesImport(requireContext(), prefName, DisguiseManager.PREF_STEALTH_NOTIFICATIONS, DisguiseManager.PREF_STEALTH_NOTIFICATIONS)
         );
     }

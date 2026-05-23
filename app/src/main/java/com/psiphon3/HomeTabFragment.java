@@ -30,6 +30,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +53,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.psiphon3.psiphonlibrary.EmbeddedValues;
 import com.psiphon3.psiphonlibrary.LocalizedActivities;
+
+import net.grandcentrix.tray.AppPreferences;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -83,6 +86,8 @@ public class HomeTabFragment extends Fragment {
     private LinearLayout lanProxyInfoSection;
     private TextView lanProxyHttpText;
     private TextView lanProxySocksText;
+    private TextView lanProxyUsernameText;
+    private TextView lanProxyPasswordText;
 
     @Nullable
     @Override
@@ -114,6 +119,8 @@ public class HomeTabFragment extends Fragment {
         lanProxyInfoSection = view.findViewById(R.id.lanProxyInfoSection);
         lanProxyHttpText = view.findViewById(R.id.lanProxyHttpText);
         lanProxySocksText = view.findViewById(R.id.lanProxySocksText);
+        lanProxyUsernameText = view.findViewById(R.id.lanProxyUsernameText);
+        lanProxyPasswordText = view.findViewById(R.id.lanProxyPasswordText);
 
         viewModel = new ViewModelProvider(requireActivity(),
                 new ViewModelProvider.AndroidViewModelFactory(requireActivity().getApplication()))
@@ -247,6 +254,32 @@ public class HomeTabFragment extends Fragment {
         } else {
             lanProxySocksText.setVisibility(View.GONE);
         }
+
+        updateLanProxyCredentials(context);
+    }
+
+    private void updateLanProxyCredentials(Context context) {
+        if (lanProxyUsernameText == null || lanProxyPasswordText == null) {
+            return;
+        }
+
+        AppPreferences preferences = new AppPreferences(context);
+        String username = preferences
+                .getString(context.getString(R.string.shareProxyOnNetworkUsernamePreference), "")
+                .trim();
+        String password = preferences
+                .getString(context.getString(R.string.shareProxyOnNetworkPasswordPreference), "");
+
+        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(password)) {
+            lanProxyUsernameText.setVisibility(View.GONE);
+            lanProxyPasswordText.setVisibility(View.GONE);
+            return;
+        }
+
+        lanProxyUsernameText.setText(getString(R.string.lan_proxy_username, username));
+        lanProxyPasswordText.setText(getString(R.string.lan_proxy_password, password));
+        lanProxyUsernameText.setVisibility(View.VISIBLE);
+        lanProxyPasswordText.setVisibility(View.VISIBLE);
     }
 
     private void hideLanProxyInfo() {
