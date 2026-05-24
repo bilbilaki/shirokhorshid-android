@@ -1166,10 +1166,10 @@ public class TunnelManager implements PsiphonTunnel.HostService, VpnManager.VpnS
 
         try {
             m_vpnManager.setShareProxyOnNetwork(m_tunnelConfig.shareProxyOnNetwork);
-            m_vpnManager.vpnEstablish();
+          //  m_vpnManager.vpnEstablish();
             MyLog.i(R.string.vpn_service_running, MyLog.Sensitivity.NOT_SENSITIVE);
 
-            m_tunnel.setVpnMode(true);
+         //   m_tunnel.setVpnMode(true);
             m_tunnel.startTunneling(getServerEntries(m_parentService));
 
             // Start conduit fallback timer immediately after tunneling begins.
